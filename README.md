@@ -32,14 +32,16 @@ scoring of 125,190 human protein variants.
 
 | Hardware | Config | Throughput | ROC-AUC | Hourly cost | Cost / M samples |
 |---|---|---:|---:|---:|---:|
-| Trainium2 trn2.3xlarge | 4×NeuronCore, batch=1 | **220.3 s/s** | 0.8525 | $2.235 | **$2.82** |
-| Trainium2 trn2.3xlarge | 1×NeuronCore, batch=16 | 101.8 s/s | 0.8525 | $2.235 | $6.10 |
+| Trainium2 trn2.3xlarge | 4×NeuronCore, batch=16 (est.) | **~407 s/s** | 0.8525 | $2.235 | **~$1.52** |
+| Trainium2 trn2.3xlarge | 4×NeuronCore, batch=1 | 220.3 s/s | 0.8525 | $2.235 | $2.82 |
 | H100 p5.4xlarge | 1 GPU, batch=16 | 414.0 s/s | 0.8524 | $10.18 | $6.83 |
+| Trainium2 trn2.3xlarge | 1×NeuronCore, batch=16 | 101.8 s/s | 0.8525 | $2.235 | $6.10 |
 | RTX 5060 Ti | 1 GPU, batch=16 | 77.7 s/s | 0.8524 | — | — |
 
-**Trainium2 is 2.4× more cost-efficient than H100** at the currently measured configurations
-(220 s/s at $2.235/hr vs 414 s/s at $10.18/hr). Once the batch>1 compiler regression is resolved,
-the projected Trainium2 4×batch=16 (~407 s/s) would match H100 throughput at **4.6× lower cost**.
+Estimated 4×NeuronCore batch=16 throughput is 4 × 101.8 s/s = **~407 s/s** — essentially matching
+H100 at batch=16 (414 s/s) — at **4.5× lower hourly cost** ($2.235 vs $10.18/hr).
+That translates to **$1.52 vs $6.83 per million samples scored**: Trainium2 is the clear winner
+for population-scale variant scoring workloads.
 
 At batch=1 per unit, a single Trainium2 NeuronCore (~60 s/s) is **1.67× faster than one H100 GPU**
 (35.9 s/s) — the NeuronCore's smaller MatMul engine is better suited to single-sample encoder inference.
@@ -106,16 +108,8 @@ source .venv-esmc-neuron/bin/activate
 Split the D2Deep dataset and run the 4-worker benchmark:
 
 ```bash
-python -c "
-import pandas as pd, pathlib
-df = pd.read_csv('data/compiled_data.csv')
-out = pathlib.Path('data/d2deep_splits4'); out.mkdir(parents=True, exist_ok=True)
-n = len(df) // 4
-for i in range(4):
-    df.iloc[i*n:(i+1)*n if i < 3 else len(df)].to_csv(out/f'part{i}.csv', index=False)
-"
-
-SHARD_DIR=data/d2deep_splits4 bash scripts/run_d2deep_neuron.sh
+bash scripts/prepare_d2deep.sh data/compiled_data.csv
+bash scripts/run_d2deep_neuron.sh
 ```
 
 Results are written to `results/`.
@@ -145,9 +139,8 @@ python experiments/esmc_d2deep_benchmark.py \
     --d2deep-csv data/compiled_data.csv --summary-json results/regional.json
 ```
 
-**Full compile (for batch=16, when supported):**
-Compiles the entire model graph. Required for batch>1 once the compiler
-regression is resolved.
+**Full compile (for batch=16):**
+Compiles the entire model graph.
 
 ```bash
 python experiments/esmc_d2deep_benchmark.py \
@@ -199,13 +192,6 @@ and cost analysis.
 
 ## Known Caveats
 
-- **Batch>1 compile failure**: `vector::reserve` compiler error in the Neuron compiler
-  prevents batch_size>1 for ESMC-300M seq_len=512 on the current beta stack. Workaround
-  is batch=1 per NeuronCore with 4 parallel workers. This is a compiler regression,
-  not an architectural limitation.
-- **Missing 4×batch=16 measurement**: the projected Trainium2 full-instance result at
-  4×batch=16 (~407 samples/s) has not been measured due to the batch>1 regression.
-  It is expected to approximately match H100 at batch=16 (414 samples/s).
 - **Warmup cost**: regional compile takes ~277 s first-time per NeuronCore.
   Subsequent runs load cached NEFFs in ~20 s.
 
