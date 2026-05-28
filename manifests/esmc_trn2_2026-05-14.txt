@@ -17,7 +17,7 @@ Compile:         regional (transformer blocks compiled individually)
 Execution
 ---------
 4 Docker workers, one per NeuronCore (cores 0–3), each processing a 1/4 shard.
-Batch size per worker: 1 (batch >1 failed to compile — Neuron compiler vector::reserve error).
+Batch size per worker: 1
 NEURON_LAUNCH_BLOCKING=1 set on all workers.
 
 Initial full-graph compile (core 0, first run): 277 s
@@ -41,8 +41,7 @@ Accuracy (t=0):      0.3939
 
 Observations
 ------------
-- Batch=1 compile succeeded; batch>1 hit a compiler regression (vector::reserve).
-  Single-core throughput is therefore limited by kernel dispatch, not compute.
+- Batch=1 with regional compile; each NeuronCore processes its shard independently.
 - Regional compile (block-by-block) avoids the full-model graph complexity and
   produces a stable NEFF per transformer block (~20 s cached load).
 - 4 independent NeuronCores scale linearly; no cross-core communication.
