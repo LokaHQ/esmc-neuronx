@@ -1,0 +1,51 @@
+{
+  "dataset": "d2deep",
+  "device": "cuda",
+  "execution": "4 Docker workers, one per GPU process, batch=16 each",
+  "instance_type": "p5.4xlarge",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "framework": "PyTorch 2.7.0a0, CUDA 12.8, nvcr.io/nvidia/pytorch:25.03-py3",
+  "model": "esmc_300m",
+  "batch_size_per_worker": 16,
+  "workers": 4,
+  "samples_total": 125190,
+  "parallel_wall_s": 317.0,
+  "throughput_samples_per_s": 394.9,
+  "notes": [
+    "Dataset sharded into 4 equal parts (31297 / 31297 / 31297 / 31299 rows).",
+    "Shards 0 and 3 contained only benign labels in their row slice — ROC-AUC not meaningful on those shards.",
+    "Combined throughput estimated as sum of per-worker rates (98.8 + 100.5 + 98.8 + 98.8 = ~397 samples/s); wall-clock limited by slowest worker (~317s).",
+    "ROC-AUC of 0.854 and 0.888 on shards 1 and 2 respectively are shard-local and not directly comparable to full-dataset AUC."
+  ],
+  "per_worker": [
+    {
+      "shard": 0,
+      "samples": 31297,
+      "throughput_samples_per_s": 98.799,
+      "roc_auc": null,
+      "eval_wall_s": 316.8
+    },
+    {
+      "shard": 1,
+      "samples": 31297,
+      "throughput_samples_per_s": 100.539,
+      "roc_auc": 0.8543,
+      "eval_wall_s": 311.3
+    },
+    {
+      "shard": 2,
+      "samples": 31297,
+      "throughput_samples_per_s": 98.763,
+      "roc_auc": 0.8879,
+      "eval_wall_s": 316.9
+    },
+    {
+      "shard": 3,
+      "samples": 31299,
+      "throughput_samples_per_s": 98.756,
+      "roc_auc": null,
+      "eval_wall_s": 316.9
+    }
+  ],
+  "date": "2026-05-26"
+}

@@ -1,0 +1,46 @@
+{
+  "accuracy_threshold": 0.3938972761402668,
+  "artifact_version": 1,
+  "attention_backend": "default",
+  "average_precision": 0.5991896653421338,
+  "batch_size_per_worker": 1,
+  "compile": true,
+  "compile_strategy": "regional",
+  "compile_and_load_s": {
+    "cached_compile_or_load_s_mean": 19.524708755750453,
+    "initial_full_graph_compile_s_observed": 277.1053283130004,
+    "model_load_s_mean": 14.724486686250202
+  },
+  "dataset": "d2deep",
+  "device": "neuron",
+  "effective_parallel_batch_size": 4,
+  "execution": "4 Docker workers pinned one per NeuronCore",
+  "instance_type": "trn2.3xlarge",
+  "label_counts": {
+    "0": 109700,
+    "1": 15490
+  },
+  "latency_s": {
+    "weighted_mean_batch_latency_s": 0.015335858657927741,
+    "worker_p50_range_s": [0.015182909500254027, 0.015254570999786665],
+    "worker_p95_range_s": [0.016002674999981537, 0.01641699200081348]
+  },
+  "model": "esmc_300m",
+  "neuron_cores_used": [0, 1, 2, 3],
+  "notes": [
+    "Batch sizes >1 failed to compile on this Neuron beta stack (vector::reserve compiler error); best measured path uses batch=1 per NeuronCore.",
+    "NEURON_LAUNCH_BLOCKING=1 was set for all workers.",
+    "Per-worker latency percentiles reported as ranges because raw per-batch vectors were not emitted."
+  ],
+  "parallel_wall_s": 568.32,
+  "roc_auc": 0.852522827089315,
+  "samples": 125190,
+  "seqlen": 512,
+  "sum_worker_steady_throughput_samples_per_s": 239.18308488848837,
+  "task": "d2deep",
+  "throughput_samples_per_s": 220.28082770270268,
+  "throughput_tokens_per_s": 112783.78378378377,
+  "workers": 4,
+  "date": "2026-05-14",
+  "source": "s3://torch-neuronx-loka-datasets-846430536449-sa-east-1/benchmark-results/results/neuron_trn2_2026-05-14/esm/parallel_full/"
+}

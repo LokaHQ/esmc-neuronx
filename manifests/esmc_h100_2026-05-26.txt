@@ -1,0 +1,72 @@
+ESMC-300M H100 Benchmark — 2026-05-26
+======================================
+
+Instance:        p5.4xlarge  (NVIDIA H100 80 GB HBM3)
+Docker image:    nvcr.io/nvidia/pytorch:25.03-py3
+PyTorch:         2.7.0a0+7c8ec84
+CUDA:            12.8
+
+Model:           EvolutionaryScale/esmc-300m-2024-12  (esmc_300m, ~300M params)
+Dataset:         D2Deep — 125,190 variants (109,700 benign / 15,490 pathogenic)
+Task:            Zero-shot pathogenicity scoring via mutation log-probability delta
+Sequence length: 512 (context window; 67% of sequences require windowing)
+Compile:         None (eager CUDA)
+Hourly cost:     $10.18/hr (p5.4xlarge on-demand, us-east-1)
+
+Experiment 1 — Single process, batch=1
+---------------------------------------
+Throughput:      35.85 samples/s
+p50 latency:     27.1 ms/sample
+Eval wall:       3,492 s (~58 min)
+ROC-AUC:         0.8524
+Est. cost:       $0.00 (hourly cost not set for this run)
+
+Experiment 2 — Single process, batch=4
+---------------------------------------
+Throughput:      136.5 samples/s
+p50 latency:     27.9 ms/batch  (~7.0 ms/sample)
+Eval wall:       917 s (~15 min)
+ROC-AUC:         0.8524
+Notes:           Latency nearly flat vs batch=1 (27.9 ms vs 27.1 ms); GPU saturates
+                 above batch=4 for this model at seq_len=512.
+
+Experiment 3 — Single process, batch=16
+-----------------------------------------
+Throughput:      414.0 samples/s
+p50 latency:     34.3 ms/batch  (~2.1 ms/sample)
+Eval wall:       302 s (~5 min)
+ROC-AUC:         0.8524
+Est. cost:       ~$0.85 (extrapolated at $10.18/hr)
+Notes:           Peak single-GPU throughput. Matches Trainium2 full-instance
+                 projected peak (~407 samples/s).
+
+Experiment 4 — 4 workers (parallel), batch=16 per worker
+----------------------------------------------------------
+Per-worker throughput:  ~99 samples/s  (all 4 workers using same GPU)
+Combined throughput:    ~395 samples/s
+Parallel wall:          ~317 s
+Notes:           4 workers share the single H100. Throughput is ~5% lower than
+                 single-process batch=16 due to context-switching overhead.
+                 Shards 0 and 3 contained only benign labels — ROC-AUC null on those.
+                 Not a recommended deployment pattern vs single-process batch=16.
+
+Quality: identical across all batch sizes (ROC-AUC 0.8524, deterministic).
+
+Hardware scaling
+----------------
+batch=1 → batch=4:   3.8× throughput gain  (27.1 → 7.0 ms/sample)
+batch=4 → batch=16:  3.0× throughput gain  (7.0 → 2.1 ms/sample)
+batch=1 → batch=16: 11.5× throughput gain
+Latency at batch=1 (27 ms) ≈ latency at batch=4 (28 ms) → near-flat up to batch=4,
+then GPU starts to saturate above batch=4.
+
+vs Trainium2
+------------
+H100 batch=16 (414 s/s) ≈ Trainium2 4×batch=1 (220 s/s) × 1.88
+H100 batch=16 (414 s/s) ≈ projected Trainium2 4×batch=16 (~407 s/s)
+H100 single-unit batch=1 (35.9 s/s) vs Trainium2 single-core batch=1 (~60 s/s):
+  Trainium2 NeuronCore is 1.67× faster per unit at batch=1.
+
+S3 artifacts
+------------
+Results stored locally at /data/results/esm/

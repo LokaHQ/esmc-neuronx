@@ -1,0 +1,54 @@
+ESMC-300M Trainium2 Benchmark — 2026-05-14
+==========================================
+
+Instance:        trn2.3xlarge  (sa-east-1b, i-090c878c2402fa9cb)
+DLC:             421672808698.dkr.ecr.us-east-1.amazonaws.com/concourse-release-0461d3b:latest
+PyTorch:         2.11.0+cu130 (Native PyTorch Neuron beta DLC)
+Neuron SDK:      Private beta Native PyTorch Neuron Engine
+Compiler flags:  NEURON_CC_FLAGS=--target trn2 --model-type transformer
+NeuronCores:     4 (NEURON_RT_VISIBLE_CORES=0/1/2/3, NEURON_RT_NUM_CORES=1 per worker)
+
+Model:           EvolutionaryScale/esmc-300m-2024-12  (esmc_300m)
+Dataset:         D2Deep — 125,190 variants (109,700 benign / 15,490 pathogenic)
+Task:            Zero-shot pathogenicity scoring via mutation log-probability delta
+Sequence length: 512 (context window; 67% of sequences require windowing)
+Compile:         regional (transformer blocks compiled individually)
+
+Execution
+---------
+4 Docker workers, one per NeuronCore (cores 0–3), each processing a 1/4 shard.
+Batch size per worker: 1 (batch >1 failed to compile — Neuron compiler vector::reserve error).
+NEURON_LAUNCH_BLOCKING=1 set on all workers.
+
+Initial full-graph compile (core 0, first run): 277 s
+Cached compile/load (subsequent workers):       ~20 s mean
+Model load (per worker):                        ~15 s mean
+
+Results
+-------
+Parallel wall time:     568 s
+Total samples:          125,190
+Combined throughput:    220.3 samples/s  (wall-clock)
+Sum worker steady-state: 239.2 samples/s
+Per-worker throughput:  ~60 samples/s  (steady-state, batch=1)
+Per-worker p50 latency: 15.2–15.3 ms  (per batch, batch=1 = per sample)
+
+Quality
+-------
+ROC-AUC:             0.8525  (full dataset, labels reassembled from shards)
+Average precision:   0.5992
+Accuracy (t=0):      0.3939
+
+Observations
+------------
+- Batch=1 compile succeeded; batch>1 hit a compiler regression (vector::reserve).
+  Single-core throughput is therefore limited by kernel dispatch, not compute.
+- Regional compile (block-by-block) avoids the full-model graph complexity and
+  produces a stable NEFF per transformer block (~20 s cached load).
+- 4 independent NeuronCores scale linearly; no cross-core communication.
+- Quality is essentially identical to CUDA RTX 5060 Ti baseline
+  (ROC-AUC delta: +0.0001, average_precision delta: +0.0002).
+
+S3 artifacts
+------------
+s3://torch-neuronx-loka-datasets-846430536449-sa-east-1/benchmark-results/results/neuron_trn2_2026-05-14/esm/parallel_full/

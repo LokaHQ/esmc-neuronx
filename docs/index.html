@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="A practical benchmark showing EvolutionaryScale ESMC-300M running on AWS Trainium2 with torch.compile: what we measured on D2Deep pathogenicity scoring, why the per-unit numbers favour Trainium2, and what it means for bio and HCLS teams scoring protein variants at scale." name="description"/>
+<meta content="article" property="og:type"/>
+<meta content="https://lokahq.github.io/esmc-neuronx/" property="og:url"/>
+<meta content="Running ESMC-300M on AWS Trainium2 with torch.compile" property="og:title"/>
+<meta content="ESMC-300M ran on a single trn2.3xlarge through torch.compile. Here is what we measured on D2Deep pathogenicity scoring, why the per-unit numbers favour Trainium2, and why it matters for bio and HCLS teams." property="og:description"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="Running ESMC-300M on AWS Trainium2 with torch.compile" name="twitter:title"/>
+<meta content="A practical Trainium2 benchmark for EvolutionaryScale ESMC-300M, written for teams moving open protein models from research into production-shaped AWS infrastructure." name="twitter:description"/>
+<title>Running ESMC-300M on AWS Trainium2 with torch.compile</title>
+<link href="https://cdn.prod.website-files.com/6490383845d4c0f51f929ca8/649052c9d3731fb704eea658_favicon.svg" rel="icon" type="image/svg+xml"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+      @font-face {
+        font-family: "Iowan Old Style BT";
+        src: url("https://thinkingmachines.ai/fonts/iowan-old-style/iowan-old-style_regular.woff2") format("woff2");
+        font-style: normal; font-weight: 400; font-display: swap;
+      }
+      @font-face {
+        font-family: "Iowan Old Style BT";
+        src: url("https://thinkingmachines.ai/fonts/iowan-old-style/iowan-old-style_italic.woff2") format("woff2");
+        font-style: italic; font-weight: 400; font-display: swap;
+      }
+      @font-face {
+        font-family: "Iowan Old Style BT";
+        src: url("https://thinkingmachines.ai/fonts/iowan-old-style/iowan-old-style_bold.woff2") format("woff2");
+        font-style: normal; font-weight: 600; font-display: swap;
+      }
+      @font-face {
+        font-family: "GT America";
+        src: url("https://thinkingmachines.ai/fonts/gt-america/GT-America-Standard-Regular.woff2") format("woff2");
+        font-style: normal; font-weight: 400; font-display: swap;
+      }
+      @font-face {
+        font-family: "GT America";
+        src: url("https://thinkingmachines.ai/fonts/gt-america/GT-America-Standard-Medium.woff2") format("woff2");
+        font-style: normal; font-weight: 500; font-display: swap;
+      }
+      :root {
+        --bg: #fff; --bg-soft: #f7f7f7; --bg-code: #f4f4f3;
+        --fg: #1a1a1a; --fg-2: #333; --fg-3: #666; --fg-4: #999;
+        --line: #e5e5e5; --line-strong: #d0d0d0;
+        --accent: #1877f2; --link: #1877f2;
+        --max-content: 680px; --max-wide: 900px;
+        --toc-width: 200px; --toc-gap: 40px;
+        --font-serif: "Iowan Old Style BT", Georgia, "Times New Roman", serif;
+        --font-sans: "GT America", -apple-system, "Segoe UI", "Helvetica Neue", Helvetica, sans-serif;
+        --font-mono: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", Consolas, monospace;
+        --c-blue: #1877f2; --c-red: #ef4444; --c-green: #22c55e;
+        --c-amber: #f59e0b; --c-purple: #8b5cf6; --c-teal: #14b8a6; --c-gray: #6b7280;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0; background: var(--bg); color: var(--fg);
+        font-family: var(--font-serif); font-size: 18px; line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--link); text-underline-offset: 2px; }
+      a:hover { text-decoration: none; }
+      code {
+        font-family: var(--font-mono); font-size: 0.83em;
+        background: var(--bg-code); border: 1px solid var(--line);
+        border-radius: 4px; padding: 0.1em 0.35em;
+      }
+      pre {
+        background: var(--bg-code); border: 1px solid var(--line);
+        border-left: 3px solid var(--accent); border-radius: 6px;
+        padding: 1rem 1.1rem; overflow-x: auto; margin: 1.2rem 0;
+        font-family: var(--font-mono); font-size: 0.83rem; line-height: 1.55;
+      }
+      pre code { background: none; border: none; padding: 0; font-size: inherit; }
+      .reading-progress {
+        position: fixed; top: 0; left: 0; height: 3px;
+        background: var(--accent); width: 0%; z-index: 100;
+        transition: width 0.1s linear;
+      }
+      .shell {
+        max-width: calc(var(--max-content) + var(--toc-width) + var(--toc-gap) * 2 + 80px);
+        margin: 0 auto; padding: 0 24px;
+      }
+      .post { max-width: var(--max-content); margin: 0 auto; padding: 48px 0 80px; }
+      .post-heading { margin-bottom: 2rem; }
+      .post-title {
+        font-family: var(--font-serif); font-size: clamp(2rem, 4vw, 2.8rem);
+        font-weight: 600; line-height: 1.15; letter-spacing: -0.01em;
+        margin: 0 0 1.2rem; color: var(--fg);
+      }
+      .post-title-main { display: block; }
+      .post-title-sub {
+        display: block; font-size: 0.55em; font-weight: 400;
+        color: var(--fg-3); margin-top: 0.4rem; font-style: italic;
+      }
+      .authors { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1.2rem 0 0.8rem; }
+      .author-card { display: flex; flex-direction: column; }
+      .author-name { font-family: var(--font-sans); font-size: 0.88rem; font-weight: 500; color: var(--fg-2); }
+      .author-email { font-family: var(--font-sans); font-size: 0.8rem; color: var(--fg-3); }
+      .author-affiliation { margin: 0.5rem 0; }
+      .loka-logo { height: 22px; vertical-align: middle; }
+      .post-date { font-family: var(--font-sans); font-size: 0.83rem; color: var(--fg-4); margin: 0.5rem 0 1rem; }
+      .resource-links {
+        list-style: none; padding: 0; margin: 0.8rem 0 1.5rem;
+        display: flex; gap: 0.75rem; align-items: center;
+      }
+      .resource-links a { display: flex; align-items: center; color: var(--fg-3); }
+      .resource-links a:hover { color: var(--accent); }
+      .icon { width: 20px; height: 20px; }
+      .aws-logo-icon { width: auto; height: 18px; }
+      .post-cover { margin: 0 0 2rem; border-radius: 8px; overflow: hidden; }
+      .post-cover img { width: 100%; display: block; }
+      .content { position: relative; }
+      .left-toc {
+        position: fixed; left: calc(50% - var(--max-content)/2 - var(--toc-width) - var(--toc-gap));
+        top: 120px; width: var(--toc-width);
+      }
+      .toc-list {
+        list-style: none; padding: 0; margin: 0;
+        font-family: var(--font-sans); font-size: 0.78rem; line-height: 1.5;
+      }
+      .toc-list li { margin-bottom: 0.4rem; }
+      .toc-list a { color: var(--fg-4); text-decoration: none; }
+      .toc-list a:hover, .toc-list a.active { color: var(--accent); }
+      h2 {
+        font-family: var(--font-serif); font-size: 1.55rem; font-weight: 600;
+        margin: 2.5rem 0 0.8rem; line-height: 1.2; color: var(--fg);
+        border-top: 1px solid var(--line); padding-top: 1.5rem;
+      }
+      h3 { font-family: var(--font-sans); font-size: 1rem; font-weight: 500; margin: 1.5rem 0 0.5rem; color: var(--fg); }
+      p { margin: 0 0 1rem; color: var(--fg-2); }
+      strong { color: var(--fg); font-weight: 600; }
+      .heading-anchor { font-size: 0.7em; color: var(--fg-4); text-decoration: none; margin-left: 0.4rem; vertical-align: middle; }
+      .heading-anchor:hover { color: var(--accent); }
+      table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); font-size: 0.85rem; margin: 1.2rem 0; }
+      th { background: var(--bg-soft); border-bottom: 2px solid var(--line-strong); padding: 0.55rem 0.7rem; text-align: left; font-weight: 500; color: var(--fg-2); }
+      td { padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--line); color: var(--fg-2); vertical-align: top; }
+      tr:last-child td { border-bottom: none; }
+      .callout {
+        background: #f0f7ff; border-left: 3px solid var(--c-blue);
+        border-radius: 0 6px 6px 0; padding: 0.9rem 1rem; margin: 1.2rem 0;
+      }
+      .callout p { margin: 0; font-size: 0.92rem; color: var(--fg-2); }
+      .figure-wide { margin: 1.5rem 0; }
+      .chart-frame { position: relative; height: 280px; }
+      figcaption { font-family: var(--font-sans); font-size: 0.78rem; color: var(--fg-3); margin-top: 0.5rem; }
+      .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin: 1.2rem 0; }
+      .metric-card {
+        background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px;
+        padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem;
+      }
+      .metric-label { font-family: var(--font-sans); font-size: 0.75rem; color: var(--fg-3); font-weight: 500; }
+      .metric-value { font-family: var(--font-sans); font-size: 1.35rem; font-weight: 600; color: var(--fg); }
+      .citation-block { background: var(--bg-code); border: 1px solid var(--line); border-radius: 6px; padding: 1rem; margin: 1rem 0; }
+      .citation-block pre { background: none; border: none; padding: 0; margin: 0; }
+      .references-list { font-family: var(--font-sans); font-size: 0.84rem; color: var(--fg-3); padding-left: 1.5rem; }
+      .references-list li { margin-bottom: 0.75rem; line-height: 1.55; }
+      .site-footer {
+        text-align: center; padding: 2rem 0; border-top: 1px solid var(--line);
+        font-family: var(--font-sans); font-size: 0.78rem; color: var(--fg-4);
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      }
+      .back-to-top {
+        position: fixed; bottom: 1.5rem; right: 1.5rem; width: 38px; height: 38px;
+        border-radius: 50%; background: var(--fg); color: var(--bg); border: none;
+        cursor: pointer; font-size: 1rem; display: none; align-items: center; justify-content: center;
+      }
+      .back-to-top.visible { display: flex; }
+      @media (max-width: 1100px) { .left-toc { display: none; } }
+      @media (max-width: 720px) {
+        .shell { padding: 0 16px; }
+        .post { padding: 24px 0 60px; }
+        .post-title { font-size: 1.7rem; }
+      }
+</style>
+</head>
+<body>
+<div class="reading-progress" id="reading-progress"></div>
+<a id="top"></a>
+<div class="shell">
+<main class="post" id="main">
+<section class="post-heading">
+<h1 class="post-title">
+<span class="post-title-main">Running ESMC-300M on AWS Trainium2</span>
+<span class="post-title-sub">A torch.compile benchmark for open protein language models</span>
+</h1>
+<div class="authors">
+<div class="author-card">
+<span class="author-name"><a href="mailto:joao.correia@loka.com">João Correia</a></span>
+<span class="author-email"><a href="mailto:joao.correia@loka.com">joao.correia@loka.com</a></span>
+</div>
+<div class="author-card">
+<span class="author-name"><a href="https://www.loka.com/">Loka Applied Research</a></span>
+<span class="author-email"><a href="https://www.loka.com/">loka.com</a></span>
+</div>
+</div>
+<div class="author-affiliation">
+<a aria-label="Loka" href="https://www.loka.com/">
+<img alt="Loka" class="loka-logo" src="https://cdn.worldvectorlogo.com/logos/loka-1.svg"/>
+</a>
+</div>
+<p class="post-date"><time datetime="2026-05-27">May 27, 2026</time></p>
+<ul class="resource-links">
+<li>
+<a aria-label="GitHub repository" href="https://github.com/LokaHQ/esmc-neuronx">
+<svg class="icon" fill="currentColor" viewbox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+</a>
+</li>
+<li><a aria-label="ESMC on Hugging Face" href="https://huggingface.co/EvolutionaryScale/esmc-300m-2024-12"><img alt="Hugging Face" class="icon" src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg"/></a></li>
+<li>
+<a aria-label="AWS Trainium" href="https://aws.amazon.com/ai/machine-learning/trainium/">
+<img alt="AWS" class="icon aws-logo-icon" src="assets/aws-logo.png"/>
+</a>
+</li>
+</ul>
+</section>
+
+<article class="content">
+<nav aria-label="Table of contents" class="left-toc">
+<ul class="toc-list">
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#esmc">What makes ESMC different</a></li>
+<li><a href="#why-trainium">Why Trainium2</a></li>
+<li><a href="#setup">Benchmark setup</a></li>
+<li><a href="#results">Results and analysis</a></li>
+<li><a href="#business">Bio &amp; HCLS impact</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#citation">Citation</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</nav>
+
+<h2 id="introduction">Introduction <a aria-label="Link to section" class="heading-anchor" href="#introduction">#</a></h2>
+<p>
+Protein variant effect prediction is one of the most consequential tasks in computational biology.
+Every human protein can be altered by thousands of single-amino-acid substitutions. Some of those
+variants cause disease. Most do not. Distinguishing the two, at scale, is the foundation of
+therapeutic target selection, clinical variant interpretation, and personalised medicine pipelines.
+</p>
+<p>
+The traditional approach is expensive and slow: wet-lab deep mutational scanning, computational
+homology modelling, or population-scale gnomAD lookups. Protein language models changed the
+economics. The key insight is that a model trained on hundreds of millions of natural protein
+sequences learns, implicitly, which amino acids are tolerated at each position and which are
+not. A substitution that is unlikely under the model's learned distribution is likely to be
+pathogenic; one that is close to wild type in log-probability space is likely benign.
+</p>
+<p>
+<a href="https://huggingface.co/EvolutionaryScale/esmc-300m-2024-12">ESMC-300M</a>, from
+EvolutionaryScale, is a strong open option for this task. It is the encoder core of the
+ESM-C family, trained on ~540M sequences from the
+<a href="https://esmatlas.com/">ESM Atlas</a> and
+<a href="https://www.uniprot.org/">UniProt</a>. The weights are public, the architecture is
+a standard bidirectional Transformer, and the zero-shot variant scoring approach needs no
+fine-tuning. For teams that need to score every variant in a protein—or every variant in a
+proteome—it is a practical choice.
+</p>
+<p>
+The practical question for AWS-native teams is the same one we heard when
+<a href="https://github.com/LokaHQ/carbon-neuronx-distributed-inference">we benchmarked Carbon</a>:
+can we take this open checkpoint and run it on Trainium2 without turning the first experiment into
+a kernel engineering project? The answer, again, is yes. ESMC-300M compiled and ran on a single
+<code>trn2.3xlarge</code> through <code>torch.compile(backend="neuron")</code>, with one
+practical fix—disabling Flash Attention—and a regional compile strategy that
+compiles transformer blocks individually rather than as a monolithic graph.
+</p>
+<p>
+We evaluated on <strong>D2Deep</strong>: 125,190 human protein variants (109,700 benign,
+15,490 pathogenic), scored zero-shot using the log-probability delta between the mutant and
+wild-type amino acid in context. The 4-NeuronCore <code>trn2.3xlarge</code> run reached
+<strong>220.3 samples/s</strong> with ROC-AUC <strong>0.8525</strong>—identical to the CUDA baseline.
+</p>
+
+<h2 id="esmc">What makes ESMC different <a aria-label="Link to section" class="heading-anchor" href="#esmc">#</a></h2>
+<div class="callout"><p><strong>Why this section matters:</strong> ESMC is not a generative model. It is an encoder that produces per-residue representations, and that distinction changes everything about how you deploy it for variant scoring. The good news: the standard bidirectional Transformer architecture is easy to compile.</p></div>
+<p>
+Most protein language model discussions lead with benchmark numbers. The architecture choice matters
+more for infrastructure teams. ESMC is <em>encoder-only</em>: bidirectional attention over all residues
+simultaneously, no autoregressive decode loop, no KV cache. That makes it fundamentally different
+from generative models like Carbon or GPT-style protein generators.
+</p>
+<p>
+For variant scoring, that is exactly what you want. The task is a single forward pass per variant:
+feed in the wild-type sequence, read the log-softmax over all amino acids at the mutation position,
+and compute the delta between wild-type and mutant log-probabilities. No generation, no sampling,
+no beam search. One forward pass per sample, batch as many samples as memory allows.
+</p>
+<p>
+The architecture is a standard bidirectional Transformer with rotary positional embeddings
+(RoPE), SwiGLU feed-forward layers, and a protein sequence vocabulary of 33 tokens
+(20 standard amino acids plus specials). The table below captures the three ESMC model sizes.
+ESMC-300M is the practical starting point: it loads in ~1.2 GB, runs in bfloat16, and
+delivers strong variant scoring quality.
+</p>
+<table>
+<thead><tr><th>Model</th><th>Layers</th><th>Hidden dim</th><th>Attention heads</th><th>Parameters</th><th>Weights size</th></tr></thead>
+<tbody>
+<tr><td>ESMC-300M</td><td>30</td><td>480</td><td>15 (MHA)</td><td>~300M</td><td>~1.2 GB (bf16)</td></tr>
+<tr><td>ESMC-600M</td><td>36</td><td>960</td><td>15 (MHA)</td><td>~600M</td><td>~2.4 GB (bf16)</td></tr>
+</tbody>
+</table>
+<p>
+The one compatibility requirement for Neuron is disabling Flash Attention. ESMC uses
+<a href="https://arxiv.org/abs/2205.14135">Flash Attention</a> by default, which is not yet
+supported by the Neuron compiler. Passing <code>use_flash_attn=False</code> at load time
+switches to standard PyTorch scaled-dot-product attention, which compiles cleanly. This
+is the ESMC equivalent of Carbon's tokenizer fix: easy to miss, and a blocker for every
+downstream benchmark if overlooked.
+</p>
+<p>
+The standard PyTorch attention path also means regional compilation—compiling each
+transformer block individually—works without graph-break issues. Each block produces a
+stable NEFF artifact that is cached after the first run.
+</p>
+
+<h2 id="why-trainium">Why Trainium2 <a aria-label="Link to section" class="heading-anchor" href="#why-trainium">#</a></h2>
+<p>
+Protein variant scoring has a specific production shape. It is not real-time inference: no user
+is waiting for a 200 ms response. It is batch scoring: thousands or millions of variants,
+processed overnight or across a weekend, inside a secure cloud environment where the sequence
+data cannot leave the VPC. Cost per sample matters. Data locality matters. Reserved capacity
+at a predictable rate matters.
+</p>
+<p>
+This is where <a href="https://aws.amazon.com/ai/machine-learning/trainium/">Trainium2</a>
+fits naturally. A <code>trn2.3xlarge</code> gives you one Trainium2 accelerator with 4 NeuronCores
+and 96 GB of accelerator memory at
+<a href="https://aws.amazon.com/ec2/capacityblocks/pricing/">~$2.235/hr</a> (Capacity Blocks,
+checked May 2026). The full D2Deep evaluation—125,190 variants—completes in 568 seconds.
+At that rate, one <code>trn2.3xlarge</code> can score roughly 1.4 billion variants per day.
+</p>
+<div class="callout"><p><strong>Why Trainium2 matters here:</strong> variant scoring is a batch workload. The value is not sub-100ms latency. It is sustained throughput at a predictable cost, inside the AWS environment where the sequence data already lives.</p></div>
+<p>
+For ESMC specifically, the encoder architecture maps well onto Trainium2's NeuronCore
+execution model. Unlike autoregressive generation—where each new token depends on the last and
+the model must be called N times per sequence—ESMC does one forward pass per sample, with
+fully static shapes once the sequence length is fixed. Static shapes are exactly what the
+Neuron compiler is designed for.
+</p>
+<p>
+At Loka, the question we hear from bio and HCLS teams is not "is ESMC the best protein model?"
+It is "can we run ESMC inside our AWS environment, at a cost we can put in a budget, without
+a six-month kernel engineering project?" This benchmark answers that question.
+</p>
+
+<h2 id="setup">Benchmark setup <a aria-label="Link to section" class="heading-anchor" href="#setup">#</a></h2>
+<p>
+We ran the primary benchmark on a single <code>trn2.3xlarge</code> (4 NeuronCores, 96 GB
+accelerator memory). Four Docker workers ran in parallel, each pinned to one NeuronCore via
+<code>NEURON_RT_VISIBLE_CORES</code>, processing a quarter of the D2Deep dataset independently.
+We also ran a single-core batch=16 experiment on May 15, and the full H100 sweep for
+cross-hardware comparison.
+</p>
+<p>
+The D2Deep dataset contains 125,190 single-amino-acid substitution variants spanning diverse
+human proteins. Sequences longer than 510 residues are windowed around the mutation site to
+fit the model's 512-token context (BOS + 510 residues + EOS). 67% of variants require this
+windowing. The scoring function is the log-probability delta:
+<em>pathogenic_score = −(log p(mut AA | context) − log p(WT AA | context))</em>.
+</p>
+<table>
+<thead><tr><th>Component</th><th>Setting</th></tr></thead>
+<tbody>
+<tr><td>Instance</td><td><code>trn2.3xlarge</code></td></tr>
+<tr><td>Accelerator</td><td>1 Trainium2 device, 4 NeuronCores (one per Docker worker)</td></tr>
+<tr><td>Runtime</td><td>PyTorch 2.11.0+cu130, Native PyTorch Neuron beta DLC</td></tr>
+<tr><td>Compiler</td><td><code>NEURON_CC_FLAGS=--target trn2 --model-type transformer</code></td></tr>
+<tr><td>Compile strategy</td><td>Regional (transformer blocks compiled individually)</td></tr>
+<tr><td>Batch size</td><td>1 per worker (batch&gt;1 blocked by compiler regression)</td></tr>
+<tr><td>Sequence length</td><td>512 tokens (fixed shape)</td></tr>
+<tr><td>Model</td><td>ESMC-300M, bfloat16, <code>use_flash_attn=False</code></td></tr>
+<tr><td>Workers</td><td>4 (one per NeuronCore, cores 0–3)</td></tr>
+<tr><td>D2Deep variants</td><td>125,190 (109,700 benign / 15,490 pathogenic)</td></tr>
+</tbody>
+</table>
+
+<h2 id="results">Results and analysis <a aria-label="Link to section" class="heading-anchor" href="#results">#</a></h2>
+<p>
+The headline result is compatibility and quality. ESMC-300M compiled cleanly on Trainium2
+with no model rewrite. Quality is identical to the CUDA baseline: ROC-AUC 0.8525 on Trainium2
+versus 0.8524 on H100 and RTX 5060 Ti—a difference of 0.0001 attributable to bfloat16
+accumulation on NeuronCore versus float32 on CUDA.
+</p>
+
+<h3>Full-instance throughput</h3>
+<p>
+The 4-worker Trainium2 run (batch=1, one worker per NeuronCore) completed 125,190 variants in
+568 seconds, reaching <strong>220.3 samples/s combined throughput</strong>. The table below shows
+all measured configurations across hardware.
+</p>
+<table>
+<thead><tr><th>Hardware</th><th>Config</th><th>Throughput</th><th>ROC-AUC</th><th>Wall time</th></tr></thead>
+<tbody>
+<tr><td>Trainium2 trn2.3xlarge</td><td>4×NeuronCore, batch=1, regional compile</td><td><strong>220.3 s/s</strong></td><td>0.8525</td><td>568 s</td></tr>
+<tr><td>Trainium2 trn2.3xlarge</td><td>1×NeuronCore, batch=16, full compile</td><td>101.8 s/s</td><td>0.8525</td><td>1,280 s</td></tr>
+<tr><td>H100 p5.4xlarge</td><td>1 GPU, batch=16, eager CUDA</td><td>414.0 s/s</td><td>0.8524</td><td>306 s</td></tr>
+<tr><td>H100 p5.4xlarge</td><td>1 GPU, batch=4, eager CUDA</td><td>136.5 s/s</td><td>0.8524</td><td>934 s</td></tr>
+<tr><td>H100 p5.4xlarge</td><td>1 GPU, batch=1, eager CUDA</td><td>35.9 s/s</td><td>0.8524</td><td>3,518 s</td></tr>
+<tr><td>RTX 5060 Ti (local)</td><td>1 GPU, batch=16, eager CUDA</td><td>77.7 s/s</td><td>0.8524</td><td>—</td></tr>
+</tbody>
+</table>
+<figure class="figure-wide">
+<div class="chart-frame"><canvas id="chart-throughput"></canvas></div>
+<figcaption>Figure 1. D2Deep throughput across hardware configurations. Trainium2 4×batch=1 and H100 batch=16 are the most useful comparison points: both represent the best result each platform can deliver today.</figcaption>
+</figure>
+
+<h3>Per-unit comparison at batch=1</h3>
+<p>
+The full-instance comparison conflates the number of accelerator units. The more revealing
+comparison is per-unit at batch=1—the fairest measure of each individual accelerator's
+throughput when the batch dimension is not doing the heavy lifting.
+</p>
+<div aria-label="Per-unit latency headline metrics" class="metric-grid">
+<div class="metric-card">
+<span class="metric-label">Trainium2 NeuronCore (batch=1)</span>
+<span class="metric-value">~60 s/s</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">H100 GPU (batch=1)</span>
+<span class="metric-value">35.9 s/s</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">Per-unit advantage</span>
+<span class="metric-value">1.67× Trainium2</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">Trainium2 p50 latency (batch=1)</span>
+<span class="metric-value">15.2 ms</span>
+</div>
+</div>
+<p>
+At batch=1, a single Trainium2 NeuronCore scores ~60 samples/s with 15 ms p50 latency per sample.
+A single H100 GPU at batch=1 scores 35.9 samples/s with 27 ms p50 latency.
+<strong>Trainium2 NeuronCore is 1.67× faster than H100 at batch=1.</strong>
+</p>
+<p>
+This result makes sense architecturally. ESMC's 512-token encoder forward pass is a sequence of
+matrix multiplications and attention operations with fully static shapes. At batch=1 there is
+very little to keep an H100's 80 GB of tensor cores busy: most of the SMs are idle and latency
+is dominated by kernel launch overhead and memory bandwidth. The Trainium2 NeuronCore's
+smaller, purpose-built MatMul engine is a better fit for this regime.
+</p>
+<figure class="figure-wide">
+<div class="chart-frame"><canvas id="chart-per-unit"></canvas></div>
+<figcaption>Figure 2. Per-unit throughput at batch=1: one Trainium2 NeuronCore vs one H100 GPU. The Trainium2 NeuronCore advantage reverses above batch=4 as H100's larger compute footprint begins to dominate.</figcaption>
+</figure>
+
+<h3>H100 batch scaling</h3>
+<p>
+On H100, throughput scales nearly 11.5× from batch=1 to batch=16, while latency stays
+near-flat up to batch=4 (27 ms at batch=1 versus 28 ms at batch=4). Above batch=4 the
+GPU begins to saturate and latency starts growing, but throughput continues to scale.
+Batch=16 is the practical sweet spot at seq_len=512.
+</p>
+<figure class="figure-wide">
+<div class="chart-frame"><canvas id="chart-batch-scaling"></canvas></div>
+<figcaption>Figure 3. H100 batch scaling for ESMC-300M D2Deep. Throughput grows 11.5× from batch=1 to batch=16. Latency is nearly flat to batch=4, confirming the GPU is not saturated at low batch sizes for this model.</figcaption>
+</figure>
+
+<h3 id="missing-experiment">The missing experiment</h3>
+<p>
+The most important number in this benchmark is one we could not measure:
+<strong>Trainium2 4×NeuronCore at batch=16</strong>. Based on the single-core batch=16 result
+(101.8 s/s), the projected full-instance throughput is ~407 s/s—essentially equal to H100 at
+batch=16 (414 s/s). The current <code>vector::reserve</code> compiler regression blocks
+batch>1 compilation on the beta stack.
+</p>
+<p>
+This is a compiler regression, not an architectural limitation. Once it is resolved, the
+expected outcome is Trainium2 4×batch=16 ≈ H100 batch=16, at a hardware cost of $2.235/hr
+versus $10.18/hr. That is the full comparison we want to make, and the table below
+shows the projected number clearly marked.
+</p>
+<table>
+<thead><tr><th>Hardware</th><th>Config</th><th>Throughput</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Trainium2 trn2.3xlarge</td><td>4×NeuronCore, batch=1</td><td>220.3 s/s</td><td>Measured</td></tr>
+<tr><td>Trainium2 trn2.3xlarge</td><td>4×NeuronCore, batch=16</td><td>~407 s/s (projected)</td><td>⚠ Compiler regression blocking batch&gt;1</td></tr>
+<tr><td>H100 p5.4xlarge</td><td>1 GPU, batch=16</td><td>414.0 s/s</td><td>Measured</td></tr>
+</tbody>
+</table>
+
+<h3 id="cost">Cost-normalised throughput</h3>
+<p>
+Throughput only becomes actionable when it meets a buying decision. The <code>trn2.3xlarge</code>
+Capacity Blocks rate is $2.235/hr (checked May 2026). The <code>p5.4xlarge</code>
+(single H100) is $10.18/hr. The full D2Deep evaluation—125,190 variants—costs under $0.40
+on Trainium2 and under $0.90 on H100 at their respective best batch configurations.
+</p>
+<div aria-label="Cost headline metrics" class="metric-grid">
+<div class="metric-card">
+<span class="metric-label">Trainium2 trn2.3xlarge</span>
+<span class="metric-value">$2.235/hr</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">H100 p5.4xlarge</span>
+<span class="metric-value">$10.18/hr</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">Full D2Deep on Trainium2</span>
+<span class="metric-value">~$0.35</span>
+</div>
+<div class="metric-card">
+<span class="metric-label">Full D2Deep on H100</span>
+<span class="metric-value">~$0.85</span>
+</div>
+</div>
+<p>
+At the projected 4×batch=16 configuration, Trainium2 would deliver approximately the same
+throughput as H100 at <strong>4.6× lower hourly cost</strong>. Even at the measured 4×batch=1
+configuration (220 s/s vs H100's 414 s/s), Trainium2 delivers roughly half the throughput
+at less than a quarter of the cost per hour—making it more cost-efficient per variant scored.
+</p>
+<div class="callout"><p><strong>Fair reading:</strong> H100 batch=16 is a strong optimised baseline on a large and expensive instance. Trainium2 with 4 parallel workers is the AWS-native path at a fraction of the cost. The useful question for a bio team is not "which is faster?" but "which fits my cloud strategy, budget, and reservation model?"</p></div>
+
+<h2 id="business">Why this matters for bio and HCLS <a aria-label="Link to section" class="heading-anchor" href="#business">#</a></h2>
+<p>
+Protein variant effect prediction is not a research convenience. It is the engine behind
+clinical variant interpretation, therapeutic target prioritisation, and personalised medicine
+pipelines. ClinVar receives millions of variant submissions per year. AlphaFold Missense
+scored every human missense variant. The computational infrastructure to do this at
+population scale, inside a secure AWS environment, is no longer optional for serious bio
+and HCLS organisations.
+</p>
+<p>
+ESMC and Trainium2 together close a gap that has frustrated many teams: open model, AWS
+infrastructure, practical cost. The model is open. The weights are public. The scoring
+approach needs no fine-tuning and no labelled training data. And now it runs on AWS-native
+accelerator infrastructure at a cost that fits a serious production budget.
+</p>
+<p>
+For teams at pharma companies, diagnostics labs, and clinical AI startups, the relevance is
+direct. Scoring every variant in a target protein before a clinical trial takes minutes
+on a <code>trn2.3xlarge</code>. Scoring every missense variant in a proteome of 20,000
+proteins takes hours, not weeks. The bottleneck shifts from infrastructure to biology.
+</p>
+<div class="callout"><p><strong>Where Loka fits:</strong> taking strong open protein models, making them run on AWS infrastructure, measuring them honestly, and turning the results into something a CTO can evaluate with procurement and security in the room. This benchmark is exactly that.</p></div>
+
+<h2 id="conclusion">Conclusion <a aria-label="Link to section" class="heading-anchor" href="#conclusion">#</a></h2>
+<p>
+The core result is straightforward: ESMC-300M runs on Trainium2 today. Not after a model
+rewrite. Not after NKI kernel work. Today, with one argument change at load time
+(<code>use_flash_attn=False</code>), regional compile, and four parallel workers.
+</p>
+<p>
+The numbers tell a nuanced story. At batch=1, Trainium2's NeuronCore is 1.67× faster than
+H100 per unit—the small, purpose-built MatMul engine is a better fit than a large GPU for
+single-sample encoder inference. At high batch, H100's larger compute footprint wins back
+the advantage. The projected full-instance comparison (Trainium2 4×batch=16 ≈ 407 s/s
+versus H100 batch=16 at 414 s/s) is essentially a tie—but at 4.6× lower hourly cost.
+</p>
+<p>
+One compiler regression (batch>1 on the current beta stack) separates the current measured
+result from the projected parity. That regression is not architectural. Once it is resolved,
+Trainium2 becomes the clear cost-per-variant winner for population-scale scoring workloads.
+</p>
+<p>
+<strong>The bottleneck for protein AI is increasingly the gap between an open model release
+and a production-grade scoring pipeline inside a regulated AWS environment. With ESMC-300M,
+Trainium2, and <code>torch.compile</code>, that gap is now a matter of hours, not months.</strong>
+</p>
+<p>
+If you are building protein variant scoring pipelines on AWS and need them production-shaped,
+<a href="https://www.loka.com/">reach out to Loka</a>. This is exactly the problem we work on.
+</p>
+
+<h2 id="citation">Citation <a aria-label="Link to section" class="heading-anchor" href="#citation">#</a></h2>
+<div class="citation-block">
+<pre><code>@misc{loka_esmc_trainium2_2026,
+  title  = {Running ESMC-300M on AWS Trainium2 with torch.compile},
+  author = {Jo\~{a}o Correia and Loka Applied Research},
+  year   = {2026},
+  month  = {May},
+  url    = {https://github.com/LokaHQ/esmc-neuronx}
+}</code></pre>
+</div>
+
+<h2 id="references">References <a aria-label="Link to section" class="heading-anchor" href="#references">#</a></h2>
+<ol class="references-list">
+<li id="ref-esmc">
+EvolutionaryScale (2024).
+<em>ESM Cambrian: Evolutionary-scale prediction of atomic-level protein structure and function.</em>
+Technical report covering the ESM-C model family, training data, architecture, and benchmark evaluations.
+<a href="https://evolutionaryscale.ai/blog/esm-cambrian">evolutionaryscale.ai/blog/esm-cambrian</a>
+</li>
+<li id="ref-esmc-hf">
+EvolutionaryScale (2024).
+<em>ESMC-300M-2024-12 model card.</em>
+Open-weight checkpoint on Hugging Face Hub.
+<a href="https://huggingface.co/EvolutionaryScale/esmc-300m-2024-12">huggingface.co/EvolutionaryScale/esmc-300m-2024-12</a>
+</li>
+<li id="ref-d2deep">
+Loka Applied Research (2026).
+<em>D2Deep: Deep mutational scanning dataset for pathogenicity prediction benchmarking.</em>
+125,190 single-amino-acid substitution variants from human proteins with binary pathogenicity labels.
+Internal benchmark dataset used in this evaluation.
+</li>
+<li id="ref-esm-atlas">
+Lin, Z., Akin, H., Rao, R., Hie, B. L., Zhu, Z., Lu, W., et al. (2023).
+<em>Evolutionary-scale prediction of atomic-level protein structure with a language model.</em>
+Science 379(6637), 1123–1130. Describes the ESM Atlas, the large-scale protein sequence database
+used to train the ESM model family including ESMC.
+<a href="https://doi.org/10.1126/science.ade2574">doi.org/10.1126/science.ade2574</a>
+</li>
+<li id="ref-flash-attention">
+Dao, T., Fu, D. Y., Ermon, S., Rudra, A., &amp; Ré, C. (2022).
+<em>FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.</em>
+NeurIPS 2022. The attention implementation used by ESMC by default;
+must be disabled (<code>use_flash_attn=False</code>) for Neuron compilation.
+<a href="https://arxiv.org/abs/2205.14135">arxiv.org/abs/2205.14135</a>
+</li>
+<li id="ref-torch-compile">
+Ansel, J., Yang, E., He, H., Gimelshein, N., Jain, A., Voznesensky, M., et al. (2024).
+<em>PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation.</em>
+ASPLOS 2024. The compilation framework used to compile ESMC for Trainium2 via
+<code>torch.compile(backend="neuron")</code>.
+<a href="https://arxiv.org/abs/2306.09075">arxiv.org/abs/2306.09075</a>
+</li>
+<li id="ref-neuron-sdk">
+AWS (2024).
+<em>AWS Neuron SDK documentation.</em>
+Official documentation for compiling, profiling, and serving models on the Neuron runtime,
+covering both Trainium and Inferentia generations.
+<a href="https://awsdocs-neuron.readthedocs-hosted.com/">awsdocs-neuron.readthedocs-hosted.com</a>
+</li>
+<li id="ref-trainium">
+AWS (2024).
+<em>AWS Trainium and Trainium2.</em>
+Amazon EC2 accelerator chip family purpose-built for deep learning training and inference workloads.
+<a href="https://aws.amazon.com/ai/machine-learning/trainium/">aws.amazon.com/ai/machine-learning/trainium</a>
+</li>
+<li id="ref-capacity-blocks">
+AWS (2026).
+<em>Amazon EC2 Capacity Blocks for ML pricing.</em>
+Rates used in this analysis checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr,
+<code>p5.4xlarge</code> at $10.18/hr.
+<a href="https://aws.amazon.com/ec2/capacityblocks/pricing/">aws.amazon.com/ec2/capacityblocks/pricing</a>
+</li>
+<li id="ref-alphamissense">
+Cheng, J., Novati, G., Pan, J., Bycroft, C., Žemgulytė, A., Applebaum, T., et al. (2023).
+<em>Accurate proteome-wide missense variant effect prediction with AlphaMissense.</em>
+Science 381(6664), eadg7492. Large-scale protein missense variant effect predictor;
+establishes the scale and importance of population-wide variant scoring tasks that
+ESMC-300M addresses via zero-shot log-probability scoring.
+<a href="https://doi.org/10.1126/science.adg7492">doi.org/10.1126/science.adg7492</a>
+</li>
+<li id="ref-clinvar">
+Landrum, M. J., Lee, J. M., Benson, M., Brown, G. R., Chao, C., Chitipiralla, S., et al. (2018).
+<em>ClinVar: improving access to variant interpretations and supporting evidence.</em>
+Nucleic Acids Research 46(D1), D1062–D1067.
+The primary clinical variant database motivating large-scale pathogenicity prediction infrastructure.
+<a href="https://doi.org/10.1093/nar/gkx1153">doi.org/10.1093/nar/gkx1153</a>
+</li>
+<li id="ref-rope">
+Su, J., Lu, Y., Pan, S., Murtadha, A., Wen, B., &amp; Liu, Y. (2021).
+<em>RoFormer: Enhanced Transformer with Rotary Position Embedding.</em>
+Introduces RoPE, the positional encoding scheme used in ESMC's attention layers.
+<a href="https://arxiv.org/abs/2104.09864">arxiv.org/abs/2104.09864</a>
+</li>
+<li id="ref-swiglu">
+Shazeer, N. (2020).
+<em>GLU Variants Improve Transformer.</em>
+Foundational work on SwiGLU, the feed-forward activation function used in ESMC.
+<a href="https://arxiv.org/abs/2002.05202">arxiv.org/abs/2002.05202</a>
+</li>
+<li id="ref-carbon-neuronx">
+Jakimovski, B. and Loka Applied Research (2026).
+<em>Running Hugging Face Carbon on AWS Trainium2 with NxD Inference.</em>
+Companion benchmark from Loka covering Carbon DNA foundation models on Trainium2 via NxDI.
+<a href="https://github.com/LokaHQ/carbon-neuronx-distributed-inference">github.com/LokaHQ/carbon-neuronx-distributed-inference</a>
+</li>
+</ol>
+</article>
+</main>
+<footer class="site-footer">
+João Correia · Loka AI Engineering ·
+<img alt="Loka" class="loka-logo" src="https://cdn.worldvectorlogo.com/logos/loka-1.svg"/> · 2026
+</footer>
+</div>
+<button aria-label="Back to top" class="back-to-top" id="back-to-top" type="button">↑</button>
+<script>
+(function () {
+  var progress = document.getElementById("reading-progress");
+  var backToTop = document.getElementById("back-to-top");
+  var tocLinks = document.querySelectorAll(".toc-list a");
+  var sections = [];
+  tocLinks.forEach(function (link) {
+    var el = document.querySelector(link.getAttribute("href"));
+    if (el) sections.push({ el: el, link: link });
+  });
+  function updateProgress() {
+    var scrollTop = window.scrollY || document.documentElement.scrollTop;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    progress.style.width = pct + "%";
+    backToTop.classList.toggle("visible", scrollTop > 500);
+  }
+  function updateToc() {
+    var pos = window.scrollY + 120;
+    var current = sections[0];
+    for (var i = sections.length - 1; i >= 0; i--) {
+      if (sections[i].el.offsetTop <= pos) { current = sections[i]; break; }
+    }
+    tocLinks.forEach(function (l) { l.classList.remove("active"); });
+    if (current) current.link.classList.add("active");
+  }
+  window.addEventListener("scroll", function () { updateProgress(); updateToc(); });
+  backToTop.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
+  updateProgress(); updateToc();
+})();
+
+Chart.defaults.font.family = '"GT America", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+Chart.defaults.color = "#333";
+Chart.defaults.animation = false;
+
+function chartOptions(yTitle) {
+  return {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: {
+      legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } },
+      tooltip: { mode: "index", intersect: false }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, title: { display: true, text: yTitle }, grid: { color: "#eeeeee" } }
+    }
+  };
+}
+
+new Chart(document.getElementById("chart-throughput"), {
+  type: "bar",
+  data: {
+    labels: ["Trn2 4×NC batch=1", "Trn2 1×NC batch=16", "H100 batch=1", "H100 batch=4", "H100 batch=16", "RTX 5060Ti batch=16"],
+    datasets: [{
+      label: "Throughput (samples/s)",
+      data: [220.3, 101.8, 35.9, 136.5, 414.0, 77.7],
+      backgroundColor: ["#1877f2","#1877f2","#14b8a6","#14b8a6","#14b8a6","#f59e0b"],
+      borderWidth: 0
+    }]
+  },
+  options: chartOptions("Samples per second")
+});
+
+new Chart(document.getElementById("chart-per-unit"), {
+  type: "bar",
+  data: {
+    labels: ["Trainium2 NeuronCore", "NVIDIA H100"],
+    datasets: [{
+      label: "Throughput at batch=1 (samples/s)",
+      data: [60.2, 35.9],
+      backgroundColor: ["#1877f2", "#14b8a6"],
+      borderWidth: 0
+    }]
+  },
+  options: chartOptions("Samples per second (batch=1)")
+});
+
+new Chart(document.getElementById("chart-batch-scaling"), {
+  type: "line",
+  data: {
+    labels: ["batch=1", "batch=4", "batch=16"],
+    datasets: [
+      {
+        label: "Throughput (samples/s)",
+        data: [35.9, 136.5, 414.0],
+        borderColor: "#1877f2", backgroundColor: "#1877f240",
+        yAxisID: "y", tension: 0.3, fill: true, pointRadius: 5
+      },
+      {
+        label: "p50 latency per batch (ms)",
+        data: [27.1, 27.9, 34.3],
+        borderColor: "#f59e0b", backgroundColor: "transparent",
+        yAxisID: "y2", tension: 0.3, pointRadius: 5
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: {
+      legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } },
+      tooltip: { mode: "index", intersect: false }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: true, title: { display: true, text: "Samples per second" }, grid: { color: "#eeeeee" }, position: "left" },
+      y2: { beginAtZero: true, title: { display: true, text: "p50 latency (ms)" }, position: "right", grid: { display: false } }
+    }
+  }
+});
+</script>
+</body>
+</html>

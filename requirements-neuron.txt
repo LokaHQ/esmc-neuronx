@@ -1,0 +1,20 @@
+# ESMC-Neuronx — Trainium2 / Neuron environment
+# Tested: Native PyTorch Neuron beta DLC (PyTorch 2.11.0+cu130)
+#
+# Install:
+#   pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com
+#   pip install -r requirements-neuron.txt
+#   pip install -e .   # installs esm_neuron package from this repo
+
+# Neuron SDK — version must match the DLC or installed neuronx-cc
+torch-neuronx
+neuronx-cc
+torch_xla
+
+# ESM library (EvolutionaryScale) — pulls in pandas, scikit-learn, boto3,
+# transformers, tokenizers, einops, and other transitive deps automatically
+esm>=3.0.0
+
+# transformers 4.46.3+ required for EsmSequenceTokenizer property setter
+# compatibility (see esm_neuron/models/esmc.py)
+transformers>=4.46.3

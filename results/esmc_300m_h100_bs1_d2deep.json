@@ -1,0 +1,33 @@
+{
+  "accuracy_threshold": 0.39368160396197777,
+  "attention_backend": "default",
+  "average_precision": 0.5991372310382526,
+  "batch_latency_s_mean": 0.027341406067048053,
+  "batch_latency_s_p50": 0.027137572498759255,
+  "batch_latency_s_p95": 0.028378243994666263,
+  "batch_size": 1,
+  "compile": false,
+  "compile_s": 0.0,
+  "dataset": "d2deep",
+  "device": "cuda",
+  "eval_wall_s": 3491.7281006039993,
+  "instance_type": "p5.4xlarge",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "framework": "PyTorch 2.7.0a0, CUDA 12.8, nvcr.io/nvidia/pytorch:25.03-py3",
+  "label_counts": {
+    "0": 109700,
+    "1": 15490
+  },
+  "model": "esmc_300m",
+  "model_load_s": 26.523602909990586,
+  "roc_auc": 0.8524308896320912,
+  "samples": 125190,
+  "seqlen": 512,
+  "task": "d2deep",
+  "threshold": 0.0,
+  "throughput_samples_per_s": 35.85330712845156,
+  "throughput_tokens_per_s": 18356.8932497672,
+  "total_wall_s": 3518.25170351399,
+  "workers": 1,
+  "date": "2026-05-26"
+}

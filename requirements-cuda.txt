@@ -1,0 +1,15 @@
+# ESMC-Neuronx — CUDA / H100 environment
+# Tested: nvcr.io/nvidia/pytorch:25.03-py3 (PyTorch 2.7.0a0, CUDA 12.8)
+# torch and torchvision are already present in the Docker image.
+#
+# Install inside the container:
+#   pip install -r requirements-cuda.txt
+#   pip install -e .   # installs esm_neuron package from this repo
+
+# ESM library (EvolutionaryScale) — pulls in pandas, scikit-learn, boto3,
+# transformers, tokenizers, einops, and other transitive deps automatically
+esm>=3.0.0
+
+# transformers 4.46.3+ required for EsmSequenceTokenizer property setter
+# compatibility (see esm_neuron/models/esmc.py)
+transformers>=4.46.3

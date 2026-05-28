@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv*/
+
+# Data — not tracked (download via scripts/prepare_d2deep.sh)
+data/
+
+# Generated results — tracked manually in results/
+results/cuda/
+results/neuron/
+
+# Neuron compile cache
+neff_cache/
+__pycache__/

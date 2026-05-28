@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "esmc-neuronx"
+version = "0.1.0"
+description = "ESMC-300M inference adapter for AWS Trainium2 (torch.compile backend)"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1",
+    # ESM 3.x pulls in pandas, scikit-learn, boto3, transformers, tokenizers, einops
+    "esm>=3.0.0",
+    # 4.46.3+ required: PreTrainedTokenizerBase.__init__ sets special tokens via setattr,
+    # which needs the property setters added in esm_neuron/models/esmc.py.
+    "transformers>=4.46.3",
+]
+
+[project.optional-dependencies]
+neuron = ["torch-neuronx", "neuronx-cc", "torch_xla"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["esm_neuron*"]
