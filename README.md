@@ -38,7 +38,7 @@ scoring of 125,190 human protein variants.
 | Trainium2 trn2.3xlarge | 1×NeuronCore, batch=16 | 101.8 s/s | 0.8525 | $2.235 | $6.10 |
 | RTX 5060 Ti | 1 GPU, batch=16 | 77.7 s/s | 0.8524 | — | — |
 
-Pricing based on São Paulo (sa-east-1): Trainium2 $2.235/hr, H100 $3.933/hr.
+Pricing based on São Paulo (sa-east-1) reserved capacity: Trainium2 $2.235/hr, H100 $3.933/hr.
 
 Estimated 4×NeuronCore batch=16 throughput is 4 × 101.8 s/s = **~407 s/s** — essentially matching
 H100 at batch=16 (414 s/s) — at **~1.7× lower cost per sample** ($1.52 vs $2.64/M).
