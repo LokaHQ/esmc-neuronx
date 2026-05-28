@@ -34,14 +34,14 @@ scoring of 125,190 human protein variants.
 |---|---|---:|---:|---:|---:|
 | Trainium2 trn2.3xlarge | 4×NeuronCore, batch=16 (est.) | **~407 s/s** | 0.8525 | $2.235 | **~$1.52** |
 | Trainium2 trn2.3xlarge | 4×NeuronCore, batch=1 | 220.3 s/s | 0.8525 | $2.235 | $2.82 |
-| H100 p5.4xlarge | 1 GPU, batch=16 | 414.0 s/s | 0.8524 | $10.18 | $6.83 |
+| H100 p5.4xlarge | 1 GPU, batch=16 | 414.0 s/s | 0.8524 | $3.933 | $2.64 |
 | Trainium2 trn2.3xlarge | 1×NeuronCore, batch=16 | 101.8 s/s | 0.8525 | $2.235 | $6.10 |
 | RTX 5060 Ti | 1 GPU, batch=16 | 77.7 s/s | 0.8524 | — | — |
 
+Pricing based on São Paulo (sa-east-1): Trainium2 $2.235/hr, H100 $3.933/hr.
+
 Estimated 4×NeuronCore batch=16 throughput is 4 × 101.8 s/s = **~407 s/s** — essentially matching
-H100 at batch=16 (414 s/s) — at **4.5× lower hourly cost** ($2.235 vs $10.18/hr).
-That translates to **$1.52 vs $6.83 per million samples scored**: Trainium2 is the clear winner
-for population-scale variant scoring workloads.
+H100 at batch=16 (414 s/s) — at **~1.7× lower cost per sample** ($1.52 vs $2.64/M).
 
 At batch=1 per unit, a single Trainium2 NeuronCore (~60 s/s) is **1.67× faster than one H100 GPU**
 (35.9 s/s) — the NeuronCore's smaller MatMul engine is better suited to single-sample encoder inference.
