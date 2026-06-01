@@ -213,7 +213,7 @@
 <h2 id="introduction">Introduction <a aria-label="Link to section" class="heading-anchor" href="#introduction">#</a></h2>
 <p>Protein variant effect prediction is a core problem in computational biology. Every human protein can be altered by thousands of single-amino-acid substitutions. Some cause disease. Most do not. Distinguishing the two, at scale, underpins therapeutic target selection, clinical variant interpretation, and personalised medicine pipelines.</p>
 <p>The traditional approach is expensive and slow: wet-lab deep mutational scanning, computational homology modelling, or population-scale gnomAD<sup class="cite"><a href="#ref-1">[1]</a></sup><sup class="cite"><a href="#ref-2">[2]</a></sup> lookups. Protein language models<sup class="cite"><a href="#ref-3">[3]</a></sup> changed the economics. A model trained on hundreds of millions of natural protein sequences learns, implicitly, which amino acids are tolerated at each position and which are not. A substitution that is unlikely under the model's learned distribution is likely pathogenic; one close to wild type in log-probability space is likely benign.</p>
-<p>ESMC-300M<sup class="cite"><a href="#ref-4">[4]</a></sup>, from EvolutionaryScale<sup class="cite"><a href="#ref-5">[5]</a></sup>, is a strong open option for this task. It is an encoder-only model of the ESM-C family<sup class="cite"><a href="#ref-6">[6]</a></sup>, trained on sequences from UniRef<sup class="cite"><a href="#ref-7">[7]</a></sup> and MGnify. The weights are public, the architecture is a standard bidirectional Transformer, and zero-shot variant scoring needs no fine-tuning.</p>
+<p>ESMC-300M<sup class="cite"><a href="#ref-4">[4]</a></sup>, from EvolutionaryScale<sup class="cite"><a href="#ref-5">[5]</a></sup>, is a strong open option for this task. It is an encoder-only model of the ESM-C family<sup class="cite"><a href="#ref-6">[6]</a></sup>, trained on sequences from UniRef<sup class="cite"><a href="#ref-7">[7]</a></sup>, MGnify, and JGI. The weights are public, the architecture is a standard bidirectional Transformer, and zero-shot variant scoring needs no fine-tuning.</p>
 <p>The practical question for teams building on AWS is the same we keep hearing: can we take this open checkpoint and run it on Trainium2 without major kernel-engineering work? In our testing, yes. ESMC-300M compiled and ran on a single <code>trn2.3xlarge</code> through <code>torch.compile(backend="neuron")</code><sup class="cite"><a href="#ref-8">[8]</a></sup>, with one practical fix—disabling Flash Attention.</p>
 <p>We evaluated on <strong>D2Deep</strong>: 125,190 human protein variants (109,700 benign, 15,490 pathogenic), scored zero-shot using the log-probability delta between the mutant and wild-type amino acid in context. The estimated 4×NeuronCore batch=16 configuration reaches <strong>~407 samples/s</strong> at <strong>~$1.52 per million samples scored</strong>—1.7× lower cost than H100 at comparable throughput.</p>
 
@@ -253,7 +253,7 @@
 </table>
 
 <h2 id="results">Results and analysis <a aria-label="Link to section" class="heading-anchor" href="#results">#</a></h2>
-<p>The headline result is compatibility and quality. ESMC-300M compiled cleanly on Trainium2 with no model rewrite. Quality is identical to the CUDA baseline: ROC-AUC 0.8525 on Trainium2 versus 0.8524 on H100—a difference of 0.0001 attributable to bfloat16 accumulation.</p>
+<p>The headline result is compatibility and quality. ESMC-300M compiled cleanly on Trainium2 with no model rewrite. Quality is effectively identical to the CUDA baseline: ROC-AUC 0.8525 on Trainium2 versus 0.8524 on H100—a difference of 0.0001 attributable to bfloat16 accumulation.</p>
 
 <h3>Full-instance throughput</h3>
 <p>Each NeuronCore scores at 101.8 samples/s at batch=16. With four NeuronCores in parallel, the estimated full-instance throughput is <strong>4 × 101.8 = ~407 samples/s</strong>—within 2% of H100 at batch=16 (414 samples/s).</p>
@@ -366,12 +366,12 @@
 <h2 id="references">References <a aria-label="Link to section" class="heading-anchor" href="#references">#</a></h2>
 <ol class="references-list">
 <li id="ref-1">Karczewski, K. J., et al. (2020). <em>The mutational constraint spectrum quantified from variation in 141,456 humans.</em> Nature 581(7809), 434–443. <a href="https://doi.org/10.1038/s41586-020-2308-7">doi.org/10.1038/s41586-020-2308-7</a></li>
-<li id="ref-2">Broad Institute. <em>Genome Aggregation Database (gnomAD) browser.</em> <a href="https://gnomad.broadinstitute.org/">gnomad.broadinstitute.org</a></li>
+<li id="ref-2">Broad Institute (n.d.). <em>Genome Aggregation Database (gnomAD) browser.</em> <a href="https://gnomad.broadinstitute.org/">gnomad.broadinstitute.org</a></li>
 <li id="ref-3">Lin, Z., et al. (2023). <em>Evolutionary-scale prediction of atomic-level protein structure with a language model.</em> Science 379(6637), 1123–1130. <a href="https://doi.org/10.1126/science.ade2574">doi.org/10.1126/science.ade2574</a></li>
 <li id="ref-4">EvolutionaryScale (2024). <em>ESMC-300M-2024-12 model card.</em> <a href="https://huggingface.co/EvolutionaryScale/esmc-300m-2024-12">huggingface.co/EvolutionaryScale/esmc-300m-2024-12</a></li>
-<li id="ref-5">EvolutionaryScale. <a href="https://www.evolutionaryscale.ai/">evolutionaryscale.ai</a></li>
+<li id="ref-5">EvolutionaryScale (n.d.). <em>Official website.</em> <a href="https://www.evolutionaryscale.ai/">evolutionaryscale.ai</a></li>
 <li id="ref-6">EvolutionaryScale (2024). <em>ESM Cambrian.</em> <a href="https://evolutionaryscale.ai/blog/esm-cambrian">evolutionaryscale.ai/blog/esm-cambrian</a></li>
-<li id="ref-7">The UniProt Consortium. <em>UniRef: UniProt Reference Clusters.</em> <a href="https://www.uniprot.org/">uniprot.org</a></li>
+<li id="ref-7">The UniProt Consortium (n.d.). <em>UniRef: UniProt Reference Clusters.</em> <a href="https://www.uniprot.org/">uniprot.org</a></li>
 <li id="ref-8">Ansel, J., et al. (2024). <em>PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation.</em> ASPLOS 2024. <a href="https://arxiv.org/abs/2306.09075">arxiv.org/abs/2306.09075</a></li>
 <li id="ref-9">AWS (2026). <em>Native PyTorch for AWS Trainium (TorchNeuron).</em> Accessed May 2026. <a href="https://awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/pytorch-native-overview.html">awsdocs-neuron.readthedocs-hosted.com/en/latest/frameworks/torch/pytorch-native-overview</a></li>
 <li id="ref-10">Shazeer, N. (2019). <em>Fast Transformer Decoding: One Write-Head is All You Need.</em> <a href="https://arxiv.org/abs/1911.02150">arxiv.org/abs/1911.02150</a></li>
