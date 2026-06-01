@@ -317,7 +317,7 @@
 <span class="metric-value">$2.235 vs $3.933</span>
 </div>
 </div>
-<p>Both rates are EC2 Capacity Blocks for ML list pricing in São Paulo (sa-east-1), checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> at $3.933/hr. These are the rates relevant to sustained production scoring; a one-off benchmark run billed at on-demand pricing will differ. At estimated 4×batch=16, Trainium2 matches H100 throughput at <strong>~1.7× lower cost per million samples scored</strong> ($1.52 vs $2.64).</p>
+<p>Both rates are <a href="https://aws.amazon.com/ec2/capacityblocks/pricing/">EC2 Capacity Blocks for ML list pricing</a> in <a href="https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-regions.html">São Paulo (sa-east-1)</a>, checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> at $3.933/hr. These are the rates relevant to sustained production scoring; a one-off benchmark run billed at on-demand pricing will differ. At estimated 4×batch=16, Trainium2 matches H100 throughput at <strong>~1.7× lower cost per million samples scored</strong> ($1.52 vs $2.64).</p>
 <table>
 <thead><tr><th>Hardware</th><th>Config</th><th>Throughput</th><th>Hourly cost</th><th>Cost / M samples</th></tr></thead>
 <tbody>
