@@ -209,7 +209,7 @@
 
 <h2 id="esmc">What makes ESMC different <a aria-label="Link to section" class="heading-anchor" href="#esmc">#</a></h2>
 <div class="callout"><p><strong>Why this section matters:</strong> ESMC is encoder-only—one forward pass per variant, no autoregressive loop. That changes everything about how you deploy it and why Trainium2 is a natural fit.</p></div>
-<p>Most protein language model discussions lead with benchmark numbers. The architecture choice matters more for infrastructure teams. ESMC is <em>encoder-only</em>: bidirectional attention over all residues simultaneously, no decode loop, no KV cache. For variant scoring, that is exactly what you want. One forward pass per variant: feed in the wild-type sequence, read log-softmax at the mutation position, compute the delta. No generation, no sampling.</p>
+<p>Most protein language model discussions lead with benchmark numbers. The architecture choice matters more for infrastructure teams. ESMC is <em>encoder-only</em>: bidirectional attention over all residues simultaneously, no decode loop, no <a href="https://arxiv.org/abs/1911.02150">KV (Key-Value) cache</a>. For variant scoring, that is exactly what you want. One forward pass per variant: feed in the wild-type sequence, read log-softmax at the mutation position, compute the delta. No generation, no sampling.</p>
 <p>The architecture is a standard bidirectional Transformer with rotary positional embeddings (RoPE), SwiGLU feed-forward layers, and a 33-token protein vocabulary. ESMC-300M loads in ~0.6 GB at bfloat16 and runs efficiently at batch=1—the natural shape for single-variant scoring.</p>
 <table>
 <thead><tr><th>Model</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Parameters</th><th>Weight size</th></tr></thead>
