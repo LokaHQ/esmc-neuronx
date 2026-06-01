@@ -210,12 +210,12 @@
 <h2 id="esmc">What makes ESMC different <a aria-label="Link to section" class="heading-anchor" href="#esmc">#</a></h2>
 <div class="callout"><p><strong>Why this section matters:</strong> ESMC is encoder-only—one forward pass per variant, no autoregressive loop. That changes everything about how you deploy it and why Trainium2 is a natural fit.</p></div>
 <p>Most protein language model discussions lead with benchmark numbers. The architecture choice matters more for infrastructure teams. ESMC is <em>encoder-only</em>: bidirectional attention over all residues simultaneously, no decode loop, no KV cache. For variant scoring, that is exactly what you want. One forward pass per variant: feed in the wild-type sequence, read log-softmax at the mutation position, compute the delta. No generation, no sampling.</p>
-<p>The architecture is a standard bidirectional Transformer with rotary positional embeddings (RoPE), SwiGLU feed-forward layers, and a 33-token protein vocabulary. ESMC-300M loads in ~1.2 GB at bfloat16 and runs efficiently at batch=1—the natural shape for single-variant scoring.</p>
+<p>The architecture is a standard bidirectional Transformer with rotary positional embeddings (RoPE), SwiGLU feed-forward layers, and a 33-token protein vocabulary. ESMC-300M loads in ~0.6 GB at bfloat16 and runs efficiently at batch=1—the natural shape for single-variant scoring.</p>
 <table>
 <thead><tr><th>Model</th><th>Layers</th><th>Hidden</th><th>Heads</th><th>Parameters</th><th>Weight size</th></tr></thead>
 <tbody>
-<tr><td>ESMC-300M</td><td>30</td><td>960</td><td>15</td><td>~300M</td><td>~1.2 GB (bf16)</td></tr>
-<tr><td>ESMC-600M</td><td>36</td><td>1152</td><td>18</td><td>~600M</td><td>~2.4 GB (bf16)</td></tr>
+<tr><td>ESMC-300M</td><td>30</td><td>960</td><td>15</td><td>~300M</td><td>~0.6 GB (bf16)</td></tr>
+<tr><td>ESMC-600M</td><td>36</td><td>1152</td><td>18</td><td>~600M</td><td>~1.2 GB (bf16)</td></tr>
 </tbody>
 </table>
 <p>The one Neuron compatibility requirement is disabling Flash Attention. ESMC uses <a href="https://arxiv.org/abs/2205.14135">Flash Attention</a> by default; passing <code>use_flash_attn=False</code> at load time switches to standard scaled-dot-product attention, which compiles cleanly. Easy to miss and a blocker if overlooked. The <code>esm_neuron</code> package in this repository handles it automatically.</p>
@@ -479,7 +479,7 @@ new Chart(document.getElementById("chart-cost"), {
     labels: ["Trn2 4×NC batch=16 (est.)", "Trn2 4×NC batch=1", "H100 batch=16"],
     datasets: [{
       label: "Cost per million samples (USD)",
-      data: [1.52, 2.82, 4.62],
+      data: [1.52, 2.82, 2.64],
       backgroundColor: ["#1877f2", "#1877f2", "#14b8a6"],
       borderWidth: 0, borderRadius: 3
     }]
