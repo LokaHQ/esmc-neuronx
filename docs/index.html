@@ -316,7 +316,7 @@
 <span class="metric-value">$2.235 vs $3.933</span>
 </div>
 </div>
-<p>Both rates are reserved capacity in São Paulo (sa-east-1), checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> at $3.933/hr. At estimated 4×batch=16, Trainium2 matches H100 throughput at <strong>~1.7× lower cost per million samples scored</strong> ($1.52 vs $2.64).</p>
+<p>Both rates are EC2 Capacity Blocks for ML list pricing in São Paulo (sa-east-1), checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> at $3.933/hr. These are the rates relevant to sustained production scoring; a one-off benchmark run billed at on-demand pricing will differ. At estimated 4×batch=16, Trainium2 matches H100 throughput at <strong>~1.7× lower cost per million samples scored</strong> ($1.52 vs $2.64).</p>
 <table>
 <thead><tr><th>Hardware</th><th>Config</th><th>Throughput</th><th>Hourly cost</th><th>Cost / M samples</th></tr></thead>
 <tbody>
@@ -363,7 +363,7 @@
 <li>Ansel, J., et al. (2024). <em>PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation.</em> ASPLOS 2024. <a href="https://arxiv.org/abs/2306.09075">arxiv.org/abs/2306.09075</a></li>
 <li>AWS (2024). <em>AWS Neuron SDK documentation.</em> <a href="https://awsdocs-neuron.readthedocs-hosted.com/">awsdocs-neuron.readthedocs-hosted.com</a></li>
 <li>AWS (2024). <em>AWS Trainium and Trainium2.</em> <a href="https://aws.amazon.com/ai/machine-learning/trainium/">aws.amazon.com/ai/machine-learning/trainium</a></li>
-<li>AWS (2026). <em>Amazon EC2 Capacity Blocks for ML pricing.</em> Rates checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> reserved at $3.933/hr (sa-east-1). <a href="https://aws.amazon.com/ec2/capacityblocks/pricing/">aws.amazon.com/ec2/capacityblocks/pricing</a></li>
+<li>AWS (2026). <em>Amazon EC2 Capacity Blocks for ML pricing.</em> Rates checked May 2026: <code>trn2.3xlarge</code> at $2.235/hr, <code>p5.4xlarge</code> at $3.933/hr (sa-east-1). <a href="https://aws.amazon.com/ec2/capacityblocks/pricing/">aws.amazon.com/ec2/capacityblocks/pricing</a></li>
 <li>Cheng, J., et al. (2023). <em>Accurate proteome-wide missense variant effect prediction with AlphaMissense.</em> Science 381(6664). <a href="https://doi.org/10.1126/science.adg7492">doi.org/10.1126/science.adg7492</a></li>
 <li>Jakimovski, B. and Loka Applied Research (2026). <em>Running Hugging Face Carbon on AWS Trainium2 with NxD Inference.</em> <a href="https://github.com/LokaHQ/carbon-neuronx-distributed-inference">github.com/LokaHQ/carbon-neuronx-distributed-inference</a></li>
 </ol>
