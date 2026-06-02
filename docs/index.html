@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="A practical benchmark showing EvolutionaryScale ESMC-300M running on AWS Trainium2 with torch.compile: what we measured on D2Deep pathogenicity scoring, why Trainium2 delivers comparable throughput to H100 at 1.7× lower cost, and what it means for health care and life sciences teams scoring protein variants at scale." name="description"/>
+<meta content="A practical benchmark showing EvolutionaryScale ESMC-300M running on AWS Trainium2 with torch.compile: what we measured on D2Deep pathogenicity scoring, why Trainium2 delivers comparable throughput to H100 at 1.7× lower cost, and what it means for healthcare and life sciences teams scoring protein variants at scale." name="description"/>
 <meta content="article" property="og:type"/>
 <meta content="https://lokahq.github.io/esmc-neuronx/" property="og:url"/>
 <meta content="Running ESMC-300M on AWS Trainium2 with torch.compile" property="og:title"/>
@@ -346,7 +346,7 @@
 <div class="callout"><p><strong>The bottom line:</strong> for population-scale variant scoring, Trainium2 is the more cost-effective option. Matching H100 throughput at $2.235/hr instead of $3.933/hr means teams score ~1.7× more variants for the same budget.</p></div>
 
 <h2 id="business">Why this matters for healthcare and life sciences <a aria-label="Link to section" class="heading-anchor" href="#business">#</a></h2>
-<p>Protein variant effect prediction feeds clinical variant interpretation, therapeutic target prioritisation, and personalised medicine pipelines. ClinVar<sup class="cite"><a href="#ref-19">[19]</a></sup> holds millions of variant submissions. AlphaMissense<sup class="cite"><a href="#ref-20">[20]</a></sup> scored every human missense variant. The computational infrastructure to do this at population scale, inside a secure AWS environment, is increasingly important for health care and life sciences teams.</p>
+<p>Protein variant effect prediction feeds clinical variant interpretation, therapeutic target prioritisation, and personalised medicine pipelines. ClinVar<sup class="cite"><a href="#ref-19">[19]</a></sup> holds millions of variant submissions. AlphaMissense<sup class="cite"><a href="#ref-20">[20]</a></sup> scored every human missense variant. The computational infrastructure to do this at population scale, inside a secure AWS environment, is increasingly important for healthcare and life sciences teams.</p>
 <p>ESMC and Trainium2 together close a common gap: open model, Trainium2 infrastructure, predictable cost. The model is open. The weights are public. The scoring approach needs no fine-tuning and no labelled training data. And now it runs on the same accelerator infrastructure teams already operate in their AWS environment, at a predictable per-sample cost.</p>
 <p>For teams at pharma companies, diagnostics labs, and clinical AI startups, the relevance is direct. Scoring every variant in a target protein before a clinical trial takes minutes on a <code>trn2.3xlarge</code>. Scoring every missense variant in a proteome of 20,000 proteins takes hours, not weeks, so compute is less often the limiting factor.</p>
 <div class="callout"><p><strong>Where Loka fits:</strong> taking strong open protein models, making them run on AWS infrastructure, measuring them carefully, and turning the results into evidence that holds up to procurement and security review. This benchmark is exactly that.</p></div>
