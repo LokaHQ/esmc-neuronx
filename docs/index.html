@@ -232,16 +232,16 @@
 
 <h2 id="why-trainium">Why Trainium2 <a aria-label="Link to section" class="heading-anchor" href="#why-trainium">#</a></h2>
 <p>Protein variant scoring has a specific production shape. It is batch scoring: thousands or millions of variants, processed inside a secure cloud environment where the sequence data cannot leave the VPC. Cost per sample matters. Data locality matters.</p>
-<p>This is where Trainium2<sup class="cite"><a href="#ref-11">[11]</a></sup> fits naturally. A <code>trn2.3xlarge</code> gives one Trainium2 accelerator with 4 NeuronCores and 96 GB of accelerator memory at ~$2.235/hr<sup class="cite"><a href="#ref-12">[12]</a></sup> (Capacity Blocks, checked May 2026). The estimated full D2Deep evaluation—125,190 variants—completes in ~310 seconds. At that rate, one <code>trn2.3xlarge</code> can score roughly 35 million variants per day.</p>
+<p>This is where Trainium2<sup class="cite"><a href="#ref-11">[11]</a></sup> fits naturally. A <code>trn2.3xlarge</code> gives one Trainium2 accelerator with four logical NeuronCores (eight physical NeuronCore-v3 paired into four under the default LNC=2 configuration) and 96 GB of accelerator memory at ~$2.235/hr<sup class="cite"><a href="#ref-12">[12]</a></sup> (Capacity Blocks, checked May 2026). The estimated full D2Deep evaluation—125,190 variants—completes in ~310 seconds. At that rate, one <code>trn2.3xlarge</code> can score roughly 35 million variants per day.</p>
 <p>ESMC's encoder architecture maps well onto Trainium2's NeuronCore. Unlike autoregressive generation—where each token depends on the last and the model runs N times per sequence—ESMC does one forward pass per sample with fully static shapes once sequence length is fixed. Static shapes are exactly what the Neuron compiler<sup class="cite"><a href="#ref-13">[13]</a></sup> is designed for.</p>
 
 <h2 id="setup">Benchmark setup <a aria-label="Link to section" class="heading-anchor" href="#setup">#</a></h2>
-<p>We ran the primary benchmark on a single <code>trn2.3xlarge</code> (4 NeuronCores, 96 GB accelerator memory). Four Docker workers ran in parallel, each pinned to one NeuronCore via <code>NEURON_RT_VISIBLE_CORES</code>, processing a quarter of the D2Deep dataset independently. We also ran a single-core batch=16 experiment to establish per-core throughput at high batch.</p>
+<p>We ran the primary benchmark on a single <code>trn2.3xlarge</code> (4 logical NeuronCores, 96 GB accelerator memory). Four Docker workers ran in parallel, each pinned to one NeuronCore via <code>NEURON_RT_VISIBLE_CORES</code>, processing a quarter of the D2Deep dataset independently. We also ran a single-core batch=16 experiment to establish per-core throughput at high batch.</p>
 <table>
 <thead><tr><th>Component</th><th>Setting</th></tr></thead>
 <tbody>
 <tr><td>Instance</td><td><code>trn2.3xlarge</code></td></tr>
-<tr><td>Accelerator</td><td>1 Trainium2 device, 4 NeuronCores (one per Docker worker)</td></tr>
+<tr><td>Accelerator</td><td>1 Trainium2 device, 4 logical NeuronCores (one per Docker worker)</td></tr>
 <tr><td>Runtime</td><td>PyTorch 2.11.0, Native PyTorch Neuron DLC (TorchNeuron, closed beta)</td></tr>
 <tr><td>Compiler</td><td><code>NEURON_CC_FLAGS=--target trn2 --model-type transformer</code></td></tr>
 <tr><td>Compile strategy</td><td>Regional (transformer blocks compiled individually)</td></tr>
@@ -256,7 +256,7 @@
 <p>The headline result is compatibility and quality. ESMC-300M compiled cleanly on Trainium2 with no model rewrite. Quality is effectively identical to the CUDA baseline: ROC-AUC 0.8525 on Trainium2 versus 0.8524 on H100—a difference of 0.0001 attributable to bfloat16 accumulation.</p>
 
 <h3>Full-instance throughput</h3>
-<p>Each NeuronCore scores at 101.8 samples/s at batch=16. With four NeuronCores in parallel, the estimated full-instance throughput is <strong>4 × 101.8 = ~407 samples/s</strong>—within 2% of H100 at batch=16 (414 samples/s).</p>
+<p>Each NeuronCore scores at 101.8 samples/s at batch=16. With four logical NeuronCores in parallel, the estimated full-instance throughput is <strong>4 × 101.8 = ~407 samples/s</strong>—within 2% of H100 at batch=16 (414 samples/s).</p>
 <table>
 <thead><tr><th>Hardware</th><th>Config</th><th>Throughput</th><th>ROC-AUC</th></tr></thead>
 <tbody>
