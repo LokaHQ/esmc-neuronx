@@ -1,0 +1,7 @@
+filename,description,download_url
+Tier.csv,"Mutations in protein coding genes from COSMIC-Cancer Mutation Census releasev92, tiers 1, 2 and 3",https://zenodo.org/records/10599463/files/Tier.csv?download=1
+cgi.csv,Somatic variants with known molecular consequences from Cancer Genome Interpreter (CGI),https://zenodo.org/records/10599463/files/cgi.csv?download=1
+humsavar_benign_mutations.csv,Benign mutations recovered from UniProtKB/Swiss-Prot humsavar dataset (release 21 December 2021),https://zenodo.org/records/10599463/files/humsavar_benign_mutations.csv?download=1
+clinvar_benign_deleterious_missense.csv,ClinVar dataset including benign and deleterious mutations,https://zenodo.org/records/10599463/files/clinvar_benign_deleterious_missense.csv?download=1
+common_variants.csv,"Common variants observed in general population (allele frequency > 0.1%), recovered from the genomAD database",https://zenodo.org/records/10599463/files/common_variants.csv?download=1
+dbSNP.csv,"SNPs from the Single Nucleotide Polymorphism database (dbSNP), excluding mutations with uncertain annotations. Mpping the chromosomal position in dbSNP to protein coding positions was done using TransVar",https://zenodo.org/records/10599463/files/dbSNP.csv?download=1

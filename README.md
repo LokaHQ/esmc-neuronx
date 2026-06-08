@@ -72,12 +72,20 @@ The `esm_neuron/` package in this repository handles this automatically via
 The benchmark uses **D2Deep** — 125,190 single-amino-acid substitution variants from human proteins
 with binary pathogenicity labels (109,700 benign / 15,490 pathogenic).
 
-The compiled CSV is available from the Loka S3 benchmark bucket:
+Compile the dataset directly from public [Zenodo](https://zenodo.org/records/10599463) sources
+(no cloud credentials required):
 
 ```bash
+python scripts/d2deep_data/compile_d2deep_data.py
+```
+
+*Alternatively*, if you have access to the Loka S3 benchmark bucket:
+
+```bash
+mkdir -p data/compiled_data
 aws s3 cp \
   s3://torch-neuronx-loka-datasets-846430536449-sa-east-1/d2deep_data/compiled_data/compiled_data.csv \
-  data/compiled_data.csv
+  data/compiled_data/compiled_data.csv
 ```
 
 ## Model Weights
@@ -105,10 +113,10 @@ bash scripts/bootstrap.sh
 source .venv-esmc-neuron/bin/activate
 ```
 
-Split the D2Deep dataset and run the 4-worker benchmark:
+Compile the D2Deep dataset and run the 4-worker benchmark:
 
 ```bash
-bash scripts/prepare_d2deep.sh data/compiled_data.csv
+bash scripts/prepare_d2deep.sh
 bash scripts/run_d2deep_neuron.sh
 ```
 
@@ -120,7 +128,7 @@ Results are written to `results/`.
 NEURON_RT_VISIBLE_CORES=0 NEURON_RT_NUM_CORES=1 \
 python experiments/esmc_d2deep_benchmark.py \
     --device neuron \
-    --d2deep-csv data/compiled_data.csv \
+    --d2deep-csv data/compiled_data/compiled_data.csv \
     --batch-size 1 \
     --compile-strategy regional \
     --limit 500 \
@@ -136,7 +144,7 @@ Compiles each transformer block individually. Avoids full-model graph complexity
 ```bash
 python experiments/esmc_d2deep_benchmark.py \
     --device neuron --batch-size 1 --compile-strategy regional \
-    --d2deep-csv data/compiled_data.csv --summary-json results/regional.json
+    --d2deep-csv data/compiled_data/compiled_data.csv --summary-json results/regional.json
 ```
 
 **Full compile (for batch=16):**
@@ -145,7 +153,7 @@ Compiles the entire model graph.
 ```bash
 python experiments/esmc_d2deep_benchmark.py \
     --device neuron --batch-size 16 --compile-strategy full \
-    --d2deep-csv data/compiled_data.csv --summary-json results/full_bs16.json
+    --d2deep-csv data/compiled_data/compiled_data.csv --summary-json results/full_bs16.json
 ```
 
 See [docs/index.html](docs/index.html) for the publishable benchmark writeup.

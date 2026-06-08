@@ -1,27 +1,34 @@
 #!/usr/bin/env bash
-# Prepare D2Deep dataset: split compiled_data.csv into 4 equal shards
+# Prepare D2Deep dataset: compile from Zenodo (if needed) and split into 4 shards
 # for the 4-worker Trainium2 benchmark.
 #
 # Usage:
-#   bash scripts/prepare_d2deep.sh <path-to-compiled_data.csv>
+#   bash scripts/prepare_d2deep.sh [path-to-compiled_data.csv]
 #
-# Example:
-#   bash scripts/prepare_d2deep.sh data/compiled_data.csv
+# If compiled_data.csv is absent, it is compiled automatically from public
+# Zenodo sources via scripts/d2deep_data/compile_d2deep_data.py (~2-5 min).
+#
+# To skip compilation and supply a pre-built CSV (e.g. from the Loka S3 bucket):
+#   mkdir -p data/compiled_data
+#   aws s3 cp \
+#     s3://torch-neuronx-loka-datasets-846430536449-sa-east-1/d2deep_data/compiled_data/compiled_data.csv \
+#     data/compiled_data/compiled_data.csv
 #
 # Output:
 #   data/d2deep_splits4/part{0,1,2,3}.csv
 set -euo pipefail
 
-INPUT_CSV="${1:?Usage: $0 <path-to-compiled_data.csv>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+DEFAULT_CSV="${REPO_ROOT}/data/compiled_data/compiled_data.csv"
+INPUT_CSV="${1:-${DEFAULT_CSV}}"
 OUTPUT_DIR="${REPO_ROOT}/data/d2deep_splits4"
 
 if [ ! -f "${INPUT_CSV}" ]; then
-    echo "ERROR: input file not found: ${INPUT_CSV}"
-    echo "Download it first:"
-    echo "  aws s3 cp s3://torch-neuronx-loka-datasets-846430536449-sa-east-1/d2deep_data/compiled_data/compiled_data.csv data/compiled_data.csv"
-    exit 1
+    echo "Compiled CSV not found at ${INPUT_CSV}."
+    echo "Compiling D2Deep dataset from Zenodo (this may take a few minutes)..."
+    python3 "${SCRIPT_DIR}/d2deep_data/compile_d2deep_data.py" \
+        --data_dir "${REPO_ROOT}/data"
 fi
 
 python3 - "${INPUT_CSV}" "${OUTPUT_DIR}" << 'PYEOF'
