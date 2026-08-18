@@ -232,6 +232,6 @@ additional computational margins beyond the efficiencies already achieved with `
 
 ## License
 
-The `esm_neuron/` adapter and benchmark scripts in this repository are provided under
-this repository's license. The ESM library (`esm` package) is subject to EvolutionaryScale's
-license terms.
+The `esm_neuron/` adapter and benchmark scripts in this repository are released under the
+Apache License 2.0 — see [LICENSE](LICENSE). The ESM library (`esm` package) and the ESMC-300M
+weights are subject to EvolutionaryScale's own license terms.
